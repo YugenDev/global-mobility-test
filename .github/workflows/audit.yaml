@@ -38,10 +38,3 @@ jobs:
         run: |
           go test -v -coverprofile=coverage.out ./internal/... ./test/...
           go tool cover -func=coverage.out
-
-      - name: Save coverage report
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-report
-          path: ./ecommerce/coverage.out
-          retention-days: 7
