@@ -193,15 +193,15 @@ func TestGetByID(t *testing.T) {
 				mockRepo.On("GetProductByID", "existing-id").Return(
 					models.Product{
 						ProductID: "existing-id",
-						Name:     "Test Product",
-					}, 
+						Name:      "Test Product",
+					},
 					nil,
 				)
 			},
-			expectedErr:  nil,
+			expectedErr: nil,
 			expectedData: models.Product{
 				ProductID: "existing-id",
-				Name:     "Test Product",
+				Name:      "Test Product",
 			},
 		},
 	}
