@@ -19,9 +19,11 @@ jobs:
         go-version: '1.23'
 
     - name: Install dependencies
+      working-directory: ./ecommerce
       run: go mod download
 
     - name: Run tests with coverage
+      working-directory: ./ecommerce
       run: |
         go test -v -coverprofile=coverage.out ./...
         go tool cover -html=coverage.out -o coverage.html
@@ -30,12 +32,14 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: coverage-report
-        path: coverage.html
+        path: ./ecommerce/coverage.html
 
     - name: Run vet
+      working-directory: ./ecommerce
       run: go vet ./...
 
     - name: Run staticcheck
       uses: dominikh/staticcheck-action@v1.3.0
       with:
         version: "2023.1.3"
+        directories: "./ecommerce"
