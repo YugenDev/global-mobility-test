@@ -64,6 +64,13 @@ func (h *ProductHandler) CreateProduct(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": utils.ErrProductStockInvalid.Error()})
 	}
 
+	if product.ProductID != "" {
+		existingProduct, err := h.Service.GetByID(product.ProductID)
+		if err == nil && existingProduct.ProductID != "" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"message": utils.ErrProductIDAlreadyExists.Error()})
+		}
+	}
+
 	err := h.Service.CreateProduct(c, &product)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"message": utils.ErrInternalServer.Error()})
