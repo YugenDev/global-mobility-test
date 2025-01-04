@@ -1,0 +1,31 @@
+{
+    "bsonType": "object",
+    "required": ["product_id", "name", "price", "stock", "created_at"],
+    "properties": {
+      "_id": {
+        "bsonType": "objectId"
+      },
+      "product_id": {
+        "bsonType": "string"
+      },
+      "name": {
+        "bsonType": "string"
+      },
+      "description": {
+        "bsonType": "string"
+      },
+      "price": {
+        "bsonType": "double"
+      },
+      "stock": {
+        "bsonType": "int"
+      },
+      "created_at": {
+        "bsonType": "date"
+      },
+      "updated_at": {
+        "bsonType": "date"
+      }
+    }
+  }
+  
