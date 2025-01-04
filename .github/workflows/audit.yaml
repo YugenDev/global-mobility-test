@@ -26,11 +26,11 @@ jobs:
         go mod download
         go mod verify
 
-    - name: Run tests
+    - name: Run tests with coverage
       working-directory: ./ecommerce
       run: |
-        go test -v ./internal/...
-        go test -v ./test/...
+        go test -v -coverprofile=coverage.out ./internal/... ./test/...
+        go tool cover -func=coverage.out
 
     - name: Run vet
       working-directory: ./ecommerce
