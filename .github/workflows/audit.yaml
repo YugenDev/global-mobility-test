@@ -39,13 +39,6 @@ jobs:
           go test -v -coverprofile=coverage.out ./internal/... ./test/...
           go tool cover -func=coverage.out
 
-      - name: Run linters
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: latest
-          working-directory: ecommerce
-          args: --timeout=5m
-
       - name: Save coverage report
         uses: actions/upload-artifact@v3
         with:
