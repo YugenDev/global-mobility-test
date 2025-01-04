@@ -5,8 +5,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func ProductRoutes(e *echo.Echo) {
-	handler := handlers.NewProductHandler()
+func ProductRoutes(e *echo.Echo, handler *handlers.ProductHandler) {
 
 	e.POST("/products", handler.CreateProduct)
 	e.GET("/products", handler.GetAllProducts)

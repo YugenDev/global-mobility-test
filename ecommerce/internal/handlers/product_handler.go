@@ -13,9 +13,9 @@ type ProductHandler struct {
 	Service *services.ProductService
 }
 
-func NewProductHandler() *ProductHandler {
+func NewProductHandler(service *services.ProductService) *ProductHandler {
 	return &ProductHandler{
-		Service: services.NewProductService(),
+		Service: service,
 	}
 }
 
