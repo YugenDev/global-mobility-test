@@ -33,6 +33,11 @@ func (s *ProductService) CreateProduct(c echo.Context, product *models.Product) 
 
 	if product.ProductID == "" {
 		product.ProductID = utils.GenerateUniqueID()
+	} else {
+		existingProduct, err := s.Repository.GetProductByID(product.ProductID)
+		if err == nil && existingProduct.ProductID != "" {
+			return utils.ErrProductIDAlreadyExists
+		}
 	}
 
 	_, err := s.Repository.CreateProduct(c, product)
@@ -67,6 +72,10 @@ func (s *ProductService) UpdateProduct(c echo.Context, id string, product *model
 		return err
 	}
 
+	if product.ProductID != "" && product.ProductID != id {
+		return utils.ErrProductIDCannotBeChanged
+	}
+
 	if product.Name != "" {
 		existingProduct.Name = product.Name
 	}
@@ -95,6 +104,14 @@ func (s *ProductService) DeleteProduct(c echo.Context, id string) error {
 		return utils.ErrProductIDRequired
 	}
 
-	_, err := s.Repository.DeleteProduct(c, id)
+	product, err := s.Repository.GetProductByID(id)
+	if err != nil {
+		return err
+	}
+	if product.ProductID == "" {
+		return utils.ErrNoProductsFound
+	}
+
+	_, err = s.Repository.DeleteProduct(c, id)
 	return err
 }
