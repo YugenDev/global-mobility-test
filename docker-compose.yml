@@ -15,7 +15,26 @@ services:
     volumes:
       - mongodb_data:/data/db
       - mongodb_config:/data/configdb
+    networks:
+      - globalMobilityNetwork
+
+  ecommerce:
+    build:
+      context: ./ecommerce
+      dockerfile: Dockerfile
+    container_name: ecommerce
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+    networks:
+      - globalMobilityNetwork
 
 volumes:
   mongodb_data:
   mongodb_config:
+
+networks:
+  globalMobilityNetwork:
+    driver: bridge
