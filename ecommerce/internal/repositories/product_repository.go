@@ -11,6 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type IProductRepository interface {
@@ -21,8 +22,16 @@ type IProductRepository interface {
 	DeleteProduct(c echo.Context, id string) (*mongo.DeleteResult, error)
 }
 
+type MongoCollection interface {
+	InsertOne(ctx context.Context, document interface{}, opts ...*options.InsertOneOptions) (*mongo.InsertOneResult, error)
+	Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (*mongo.Cursor, error)
+	FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) *mongo.SingleResult
+	UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
+	DeleteOne(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
+}
+
 type ProductRepository struct {
-	Collection *mongo.Collection
+	Collection MongoCollection
 }
 
 var _ IProductRepository = (*ProductRepository)(nil)
@@ -34,6 +43,9 @@ func NewProductRepository() *ProductRepository {
 }
 
 func (r *ProductRepository) CreateProduct(c echo.Context, product *models.Product) (*mongo.InsertOneResult, error) {
+	if r.Collection == nil {
+		return nil, errors.New("database collection is not initialized")
+	}
 	if product == nil {
 		return nil, errors.New("product cannot be nil")
 	}
