@@ -1,4 +1,4 @@
-name: Audit
+name: Go Quality Checks
 
 on:
   push:
@@ -8,38 +8,50 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    name: Run Tests
+  quality:
+    name: Quality Checks
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    defaults:
+      run:
+        working-directory: ./ecommerce
 
     steps:
-    - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.22'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+          cache: true
 
-    - name: Install dependencies
-      working-directory: ./ecommerce
-      run: |
-        go mod download
-        go mod verify
+      - name: Verify dependencies
+        run: |
+          go mod download
+          go mod verify
 
-    - name: Run tests with coverage
-      working-directory: ./ecommerce
-      run: |
-        go test -v -coverprofile=coverage.out ./internal/... ./test/...
-        go tool cover -func=coverage.out
+      - name: Run tests and coverage
+        run: |
+          go test -v -race -coverprofile=coverage.out ./internal/... ./test/...
+          go tool cover -func=coverage.out
 
-    - name: Run vet
-      working-directory: ./ecommerce
-      run: go vet ./internal/... ./test/...
+      - name: Run code analysis
+        run: |
+          go vet ./internal/... ./test/...
+          
+      - name: Run staticcheck
+        uses: dominikh/staticcheck-action@v1.3.0
+        with:
+          version: "2023.1.3"
+          install-go: false
+          working-directory: ./ecommerce
+          min-go-version: "1.20"
 
-    - name: Run staticcheck
-      uses: dominikh/staticcheck-action@v1.3.0
-      with:
-        version: "2023.1.3"
-        install-go: false
-        working-directory: ./ecommerce
-        min-go-version: "1.20"
+      - name: Store coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: ./ecommerce/coverage.out
+          retention-days: 7
