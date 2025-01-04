@@ -10,25 +10,25 @@ import (
 )
 
 type ProductHandler struct {
-	Service *services.ProductService
+	Service services.IProductService
 }
 
-func NewProductHandler(service *services.ProductService) *ProductHandler {
+func NewProductHandler(service services.IProductService) *ProductHandler {
 	return &ProductHandler{
 		Service: service,
 	}
 }
 
 func (h *ProductHandler) GetAllProducts(c echo.Context) error {
-    products, err := h.Service.GetAll()
-    if err != nil {
-        if err == utils.ErrNoProductsFound {
-            return c.JSON(http.StatusNotFound, map[string]string{"message": err.Error()})
-        }
-        return c.JSON(http.StatusInternalServerError, map[string]string{"message": utils.ErrInternalServer.Error()})
-    }
+	products, err := h.Service.GetAll()
+	if err != nil {
+		if err == utils.ErrNoProductsFound {
+			return c.JSON(http.StatusNotFound, map[string]string{"message": err.Error()})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": utils.ErrInternalServer.Error()})
+	}
 
-    return c.JSON(http.StatusOK, products)
+	return c.JSON(http.StatusOK, products)
 }
 
 func (h *ProductHandler) GetProductByID(c echo.Context) error {

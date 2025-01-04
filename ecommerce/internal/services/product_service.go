@@ -7,9 +7,19 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+type IProductService interface {
+	CreateProduct(c echo.Context, product *models.Product) error
+	GetAll() ([]models.Product, error)
+	GetByID(id string) (models.Product, error)
+	UpdateProduct(c echo.Context, id string, product *models.Product) error
+	DeleteProduct(c echo.Context, id string) error
+}
+
 type ProductService struct {
 	Repository repositories.IProductRepository
 }
+
+var _ IProductService = (*ProductService)(nil)
 
 func NewProductService(repo repositories.IProductRepository) *ProductService {
 	return &ProductService{
