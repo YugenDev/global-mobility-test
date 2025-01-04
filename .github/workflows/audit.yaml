@@ -22,17 +22,9 @@ jobs:
       working-directory: ./ecommerce
       run: go mod download
 
-    - name: Run tests with coverage
+    - name: Run tests
       working-directory: ./ecommerce
-      run: |
-        go test -v -coverprofile=coverage.out ./...
-        go tool cover -html=coverage.out -o coverage.html
-
-    - name: Upload coverage report
-      uses: actions/upload-artifact@v3
-      with:
-        name: coverage-report
-        path: ./ecommerce/coverage.html
+      run: go test -v ./...
 
     - name: Run vet
       working-directory: ./ecommerce
