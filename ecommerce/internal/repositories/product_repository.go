@@ -13,9 +13,19 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+type IProductRepository interface {
+	CreateProduct(c echo.Context, product *models.Product) (*mongo.InsertOneResult, error)
+	GetAllProducts() ([]models.Product, error)
+	GetProductByID(id string) (models.Product, error)
+	UpdateProduct(c echo.Context, id string, product *models.Product) (*mongo.UpdateResult, error)
+	DeleteProduct(c echo.Context, id string) (*mongo.DeleteResult, error)
+}
+
 type ProductRepository struct {
 	Collection *mongo.Collection
 }
+
+var _ IProductRepository = (*ProductRepository)(nil)
 
 func NewProductRepository() *ProductRepository {
 	return &ProductRepository{
