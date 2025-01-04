@@ -1,5 +1,19 @@
 services:
 
+  api-gateway:
+    build:
+     context: ./api-gateway
+     dockerfile: Dockerfile
+    container_name: api-gateway
+    restart: always
+    ports:
+      - "80:80"
+      - "8081:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"    
+    networks:
+      - globalMobilityNetwork
+
   mongodb:
     build:
       context: ./mongoDB
@@ -31,6 +45,33 @@ services:
       - "8080:8080"
     depends_on:
       - mongodb
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ecommerce.rule=PathPrefix(`/api/ecommerce`)"
+      - "traefik.http.middlewares.ecommerce-stripprefix.stripprefix.prefixes=/api/ecommerce"
+      - "traefik.http.routers.ecommerce.middlewares=ecommerce-stripprefix"
+      - "traefik.http.services.ecommerce.loadbalancer.server.port=8080"
+    networks:
+      - globalMobilityNetwork
+  
+  space-api:
+    build:
+      context: ./spaceAPI
+      dockerfile: Dockerfile
+    container_name: spaceAPI
+    restart: always
+    environment:
+      NASA_API_KEY: ${NASA_API_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongodb
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.spaceAPI.rule=PathPrefix(`/api/spaceAPI`)"
+      - "traefik.http.middlewares.spaceAPI-stripprefix.stripprefix.prefixes=/api/space-api"
+      - "traefik.http.routers.spaceAPI.middlewares=spaceAPI-stripprefix"
+      - "traefik.http.services.spaceAPI.loadbalancer.server.port=8000"
     networks:
       - globalMobilityNetwork
 
