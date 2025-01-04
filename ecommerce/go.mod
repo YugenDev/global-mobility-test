@@ -3,6 +3,7 @@ module github.com/YugenDev/global-mobility-test
 go 1.22.5
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/labstack/echo/v4 v4.13.3
 	go.mongodb.org/mongo-driver v1.17.1
 )
