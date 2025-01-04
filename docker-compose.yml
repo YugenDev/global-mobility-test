@@ -68,7 +68,7 @@ services:
       - mongodb
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.spaceAPI.rule=PathPrefix(`/api/spaceAPI`)"
+      - "traefik.http.routers.spaceAPI.rule=PathPrefix(`/api/space-api`)"
       - "traefik.http.middlewares.spaceAPI-stripprefix.stripprefix.prefixes=/api/space-api"
       - "traefik.http.routers.spaceAPI.middlewares=spaceAPI-stripprefix"
       - "traefik.http.services.spaceAPI.loadbalancer.server.port=8000"
