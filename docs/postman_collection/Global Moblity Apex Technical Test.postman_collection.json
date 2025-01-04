@@ -397,7 +397,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n  \"name\": \"Testing change\",\r\n  \"description\": \"yeeehaaaaaa\",\r\n  \"price\": 29.99,\r\n  \"stock\": 50\r\n}\r\n",
+									"raw": "{\r\n  \"name\": \"Testiang change\",\r\n  \"description\": \"yeeehaaaaaa\",\r\n  \"price\": 29.99,\r\n  \"stock\": 50\r\n}\r\n",
 									"options": {
 										"raw": {
 											"language": "json"
