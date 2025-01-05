@@ -19,6 +19,7 @@ Basic CRUD operations for the e-commerce microservice.
         "description": "yeeehaaaaaa",
         "price": 29.99,
         "stock": 50
+        
     }
     ```
 
