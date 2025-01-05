@@ -85,6 +85,11 @@ func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": utils.ErrProductIDRequired.Error()})
 	}
 
+	existingProduct, err := h.Service.GetByID(id)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"message": utils.ErrNoProductsFound.Error()})
+	}
+
 	var product models.Product
 	if err := c.Bind(&product); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": utils.ErrInvalidRequestPayload.Error()})
@@ -97,7 +102,11 @@ func (h *ProductHandler) UpdateProduct(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": utils.ErrProductStockInvalid.Error()})
 	}
 
-	err := h.Service.UpdateProduct(c, id, &product)
+	if product.ProductID != "" && product.ProductID != existingProduct.ProductID {
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": utils.ErrProductIDCannotBeChanged.Error()})
+	}
+
+	err = h.Service.UpdateProduct(c, id, &product)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"message": utils.ErrInternalServer.Error()})
 	}
