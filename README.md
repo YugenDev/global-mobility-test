@@ -20,10 +20,18 @@
 ### Usage Guide
 - This backend is meant to be used through its API-Gateway (Traefik). You can view Traefik's dashboard at `http://localhost:8081/dashboard`.
 
+## Healthchecks
+- Ecommerce `http://localhost:80/api/ecommerce`
+- SpaceAPI `http://localhost:80/api/space-api`
+
 - For detailed API documentation, Postman collections, and more usage details, refer to the [documentation module](docs/Docs.md).
 
 ### Additional Notes
 - Ensure to check the `.env` file for any environment variables that need to be configured before running the application.
+    ```sh
+    NASA_API_KEY=YourAPIKey
+    ```
+
 - To stop the application, use:
     ```sh
     docker-compose down
