@@ -152,41 +152,6 @@ func TestGetProductByID(t *testing.T) {
 	}
 }
 
-func TestDeleteProduct(t *testing.T) {
-	mockService := new(MockProductService)
-	handler := handlers.NewProductHandler(mockService)
-	e := echo.New()
-
-	mockService.On("DeleteProduct", mock.Anything, "1").Return(nil)
-
-	req := httptest.NewRequest(http.MethodDelete, "/", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetPath("/products/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("1")
-
-	if assert.NoError(t, handler.DeleteProduct(c)) {
-		assert.Equal(t, http.StatusNoContent, rec.Code)
-	}
-}
-func TestDeleteProductInvalidID(t *testing.T) {
-	mockService := new(MockProductService)
-	handler := handlers.NewProductHandler(mockService)
-	e := echo.New()
-
-	req := httptest.NewRequest(http.MethodDelete, "/", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetPath("/products/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("")
-
-	if err := handler.DeleteProduct(c); assert.NoError(t, err) {
-		assert.Equal(t, http.StatusBadRequest, rec.Code)
-	}
-}
-
 func TestGetAllProductsError(t *testing.T) {
 	mockService := new(MockProductService)
 	handler := handlers.NewProductHandler(mockService)
@@ -328,27 +293,6 @@ func TestCreateProductWithErrors(t *testing.T) {
 	}
 }
 
-func TestDeleteProductError(t *testing.T) {
-	mockService := new(MockProductService)
-	handler := handlers.NewProductHandler(mockService)
-	e := echo.New()
-
-	mockService.On("DeleteProduct", mock.Anything, "1").Return(utils.ErrInternalServer)
-
-	req := httptest.NewRequest(http.MethodDelete, "/", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetPath("/products/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("1")
-
-	if err := handler.DeleteProduct(c); assert.NoError(t, err) {
-		assert.Equal(t, http.StatusInternalServerError, rec.Code)
-		var response map[string]string
-		json.Unmarshal(rec.Body.Bytes(), &response)
-		assert.Equal(t, utils.ErrInternalServer.Error(), response["message"])
-	}
-}
 func TestCreateProductEmptyNameField(t *testing.T) {
 	mockService := new(MockProductService)
 	handler := handlers.NewProductHandler(mockService)
@@ -474,9 +418,9 @@ func TestUpdateProduct(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name: "Empty ID",
-			id:   "",
-			setupMock: func(m *MockProductService) {},
+			name:           "Empty ID",
+			id:             "",
+			setupMock:      func(m *MockProductService) {},
 			expectedStatus: http.StatusBadRequest,
 			expectedMsg:    utils.ErrProductIDRequired.Error(),
 		},
@@ -519,8 +463,8 @@ func TestUpdateProduct(t *testing.T) {
 			id:   "1",
 			product: models.Product{
 				ProductID: "2",
-				Price:    10,
-				Stock:    5,
+				Price:     10,
+				Stock:     5,
 			},
 			setupMock: func(m *MockProductService) {
 				m.On("GetByID", "1").Return(models.Product{ProductID: "1"}, nil)
@@ -572,3 +516,75 @@ func TestUpdateProduct(t *testing.T) {
 		})
 	}
 }
+func TestDeleteProduct(t *testing.T) {
+	tests := []struct {
+		name           string
+		id             string
+		setupMock      func(*MockProductService)
+		expectedStatus int
+		expectedMsg    string
+	}{
+		{
+			name: "Success",
+			id:   "1",
+			setupMock: func(m *MockProductService) {
+				m.On("GetByID", "1").Return(models.Product{ProductID: "1"}, nil)
+				m.On("DeleteProduct", mock.Anything, "1").Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name:           "Empty ID",
+			id:             "",
+			setupMock:      func(m *MockProductService) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedMsg:    utils.ErrProductIDRequired.Error(),
+		},
+		{
+			name: "Product Not Found",
+			id:   "999",
+			setupMock: func(m *MockProductService) {
+				m.On("GetByID", "999").Return(models.Product{}, utils.ErrNoProductsFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			expectedMsg:    utils.ErrNoProductsFound.Error(),
+		},
+		{
+			name: "Internal Server Error",
+			id:   "1",
+			setupMock: func(m *MockProductService) {
+				m.On("GetByID", "1").Return(models.Product{ProductID: "1"}, nil)
+				m.On("DeleteProduct", mock.Anything, "1").Return(utils.ErrInternalServer)
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedMsg:    utils.ErrInternalServer.Error(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockService := new(MockProductService)
+			tt.setupMock(mockService)
+			handler := handlers.NewProductHandler(mockService)
+			e := echo.New()
+
+			req := httptest.NewRequest(http.MethodDelete, "/", nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			c.SetPath("/products/:id")
+			c.SetParamNames("id")
+			c.SetParamValues(tt.id)
+
+			err := handler.DeleteProduct(c)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+
+			if tt.expectedMsg != "" {
+				var response map[string]string
+				json.Unmarshal(rec.Body.Bytes(), &response)
+				assert.Equal(t, tt.expectedMsg, response["message"])
+			}
+		})
+	}
+}
+
