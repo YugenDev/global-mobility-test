@@ -13,4 +13,6 @@ var (
 	ErrInvalidRequestPayload      = errors.New("invalid request body")
 	ErrProductIDAlreadyExists     = errors.New("product ID already exists")
 	ErrProductIDCannotBeChanged   = errors.New("product ID cannot be changed")
+	ErrDatabaseNotInitialized     = errors.New("database collection not initialized")
+	ErrNullProductData            = errors.New("product data cannot be nil")
 )
