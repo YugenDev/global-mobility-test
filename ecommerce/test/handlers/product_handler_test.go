@@ -120,30 +120,6 @@ func TestCreateProductInvalidData(t *testing.T) {
 	}
 }
 
-func TestUpdateProductInvalidData(t *testing.T) {
-	mockService := new(MockProductService)
-	handler := handlers.NewProductHandler(mockService)
-	e := echo.New()
-
-	product := &models.Product{
-		Price: -1,
-		Stock: -1,
-	}
-
-	productJSON, _ := json.Marshal(product)
-	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(string(productJSON)))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetPath("/products/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("1")
-
-	if err := handler.UpdateProduct(c); assert.NoError(t, err) {
-		assert.Equal(t, http.StatusBadRequest, rec.Code)
-	}
-}
-
 func TestGetProductByID(t *testing.T) {
 	mockService := new(MockProductService)
 	handler := handlers.NewProductHandler(mockService)
@@ -173,33 +149,6 @@ func TestGetProductByID(t *testing.T) {
 		err := json.Unmarshal(rec.Body.Bytes(), &responseProduct)
 		assert.NoError(t, err)
 		assert.Equal(t, product, responseProduct)
-	}
-}
-
-func TestUpdateProduct(t *testing.T) {
-	mockService := new(MockProductService)
-	handler := handlers.NewProductHandler(mockService)
-	e := echo.New()
-
-	product := &models.Product{
-		Name:  "Updated Product",
-		Price: 20.0,
-		Stock: 10,
-	}
-
-	mockService.On("UpdateProduct", mock.Anything, "1", product).Return(nil)
-
-	productJSON, _ := json.Marshal(product)
-	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(string(productJSON)))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetPath("/products/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("1")
-
-	if assert.NoError(t, handler.UpdateProduct(c)) {
-		assert.Equal(t, http.StatusOK, rec.Code)
 	}
 }
 
@@ -332,54 +281,7 @@ func TestGetProductByIDNotFound(t *testing.T) {
 		assert.Equal(t, utils.ErrNoProductsFound.Error(), response["message"])
 	}
 }
-func TestUpdateProductInvalidID(t *testing.T) {
-	mockService := new(MockProductService)
-	handler := handlers.NewProductHandler(mockService)
-	e := echo.New()
 
-	product := &models.Product{
-		Name:  "Test Product",
-		Price: 10.0,
-		Stock: 5,
-	}
-
-	productJSON, _ := json.Marshal(product)
-	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(string(productJSON)))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetPath("/products/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("")
-
-	if err := handler.UpdateProduct(c); assert.NoError(t, err) {
-		assert.Equal(t, http.StatusBadRequest, rec.Code)
-		var response map[string]string
-		json.Unmarshal(rec.Body.Bytes(), &response)
-		assert.Equal(t, utils.ErrProductIDRequired.Error(), response["message"])
-	}
-}
-func TestUpdateProductInvalidPayload(t *testing.T) {
-	mockService := new(MockProductService)
-	handler := handlers.NewProductHandler(mockService)
-	e := echo.New()
-
-	invalidJSON := `{"price": "invalid"`
-	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(invalidJSON))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetPath("/products/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("1")
-
-	if err := handler.UpdateProduct(c); assert.NoError(t, err) {
-		assert.Equal(t, http.StatusBadRequest, rec.Code)
-		var response map[string]string
-		json.Unmarshal(rec.Body.Bytes(), &response)
-		assert.Equal(t, utils.ErrInvalidRequestPayload.Error(), response["message"])
-	}
-}
 func TestGetAllProductsInternalError(t *testing.T) {
 	mockService := new(MockProductService)
 	handler := handlers.NewProductHandler(mockService)
@@ -419,35 +321,6 @@ func TestCreateProductWithErrors(t *testing.T) {
 	c := e.NewContext(req, rec)
 
 	if err := handler.CreateProduct(c); assert.NoError(t, err) {
-		assert.Equal(t, http.StatusInternalServerError, rec.Code)
-		var response map[string]string
-		json.Unmarshal(rec.Body.Bytes(), &response)
-		assert.Equal(t, utils.ErrInternalServer.Error(), response["message"])
-	}
-}
-func TestUpdateProductError(t *testing.T) {
-	mockService := new(MockProductService)
-	handler := handlers.NewProductHandler(mockService)
-	e := echo.New()
-
-	product := &models.Product{
-		Name:  "Test Product",
-		Price: 10.0,
-		Stock: 5,
-	}
-
-	mockService.On("UpdateProduct", mock.Anything, "1", product).Return(utils.ErrInternalServer)
-
-	productJSON, _ := json.Marshal(product)
-	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(string(productJSON)))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetPath("/products/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("1")
-
-	if err := handler.UpdateProduct(c); assert.NoError(t, err) {
 		assert.Equal(t, http.StatusInternalServerError, rec.Code)
 		var response map[string]string
 		json.Unmarshal(rec.Body.Bytes(), &response)
@@ -576,57 +449,126 @@ func TestCreateProductInvalidStock(t *testing.T) {
 		assert.Equal(t, utils.ErrProductStockInvalid.Error(), response["message"])
 	}
 }
-func TestUpdateProductNegativeStock(t *testing.T) {
-	mockService := new(MockProductService)
-	handler := handlers.NewProductHandler(mockService)
-	e := echo.New()
-
-	product := &models.Product{
-		Name:  "Test Product",
-		Price: 10.0,
-		Stock: -5,
+func TestUpdateProduct(t *testing.T) {
+	tests := []struct {
+		name           string
+		id             string
+		product        models.Product
+		setupMock      func(*MockProductService)
+		expectedStatus int
+		expectedMsg    string
+	}{
+		{
+			name: "Success",
+			id:   "1",
+			product: models.Product{
+				Name:        "Updated Product",
+				Description: "Updated Description",
+				Price:       20.0,
+				Stock:       10,
+			},
+			setupMock: func(m *MockProductService) {
+				m.On("GetByID", "1").Return(models.Product{ProductID: "1"}, nil)
+				m.On("UpdateProduct", mock.Anything, "1", mock.Anything).Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "Empty ID",
+			id:   "",
+			setupMock: func(m *MockProductService) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedMsg:    utils.ErrProductIDRequired.Error(),
+		},
+		{
+			name: "Product Not Found",
+			id:   "999",
+			setupMock: func(m *MockProductService) {
+				m.On("GetByID", "999").Return(models.Product{}, utils.ErrNoProductsFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			expectedMsg:    utils.ErrNoProductsFound.Error(),
+		},
+		{
+			name: "Invalid Price",
+			id:   "1",
+			product: models.Product{
+				Price: -10,
+			},
+			setupMock: func(m *MockProductService) {
+				m.On("GetByID", "1").Return(models.Product{ProductID: "1"}, nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedMsg:    utils.ErrProductPriceInvalid.Error(),
+		},
+		{
+			name: "Invalid Stock",
+			id:   "1",
+			product: models.Product{
+				Price: 10,
+				Stock: -1,
+			},
+			setupMock: func(m *MockProductService) {
+				m.On("GetByID", "1").Return(models.Product{ProductID: "1"}, nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedMsg:    utils.ErrProductStockInvalid.Error(),
+		},
+		{
+			name: "Attempt to Change ProductID",
+			id:   "1",
+			product: models.Product{
+				ProductID: "2",
+				Price:    10,
+				Stock:    5,
+			},
+			setupMock: func(m *MockProductService) {
+				m.On("GetByID", "1").Return(models.Product{ProductID: "1"}, nil)
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedMsg:    utils.ErrProductIDCannotBeChanged.Error(),
+		},
+		{
+			name: "Internal Server Error",
+			id:   "1",
+			product: models.Product{
+				Price: 10,
+				Stock: 5,
+			},
+			setupMock: func(m *MockProductService) {
+				m.On("GetByID", "1").Return(models.Product{ProductID: "1"}, nil)
+				m.On("UpdateProduct", mock.Anything, "1", mock.Anything).Return(utils.ErrInternalServer)
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedMsg:    utils.ErrInternalServer.Error(),
+		},
 	}
 
-	productJSON, _ := json.Marshal(product)
-	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(string(productJSON)))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetPath("/products/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("1")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockService := new(MockProductService)
+			tt.setupMock(mockService)
+			handler := handlers.NewProductHandler(mockService)
+			e := echo.New()
 
-	if err := handler.UpdateProduct(c); assert.NoError(t, err) {
-		assert.Equal(t, http.StatusBadRequest, rec.Code)
-		var response map[string]string
-		json.Unmarshal(rec.Body.Bytes(), &response)
-		assert.Equal(t, utils.ErrProductStockInvalid.Error(), response["message"])
-	}
-}
-func TestUpdateProductNegativePrice(t *testing.T) {
-	mockService := new(MockProductService)
-	handler := handlers.NewProductHandler(mockService)
-	e := echo.New()
+			productJSON, _ := json.Marshal(tt.product)
+			req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(string(productJSON)))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			c.SetPath("/products/:id")
+			c.SetParamNames("id")
+			c.SetParamValues(tt.id)
 
-	product := &models.Product{
-		Name:  "Test Product",
-		Price: -10.0,
-		Stock: 5,
-	}
+			err := handler.UpdateProduct(c)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-	productJSON, _ := json.Marshal(product)
-	req := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(string(productJSON)))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetPath("/products/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("1")
-
-	if err := handler.UpdateProduct(c); assert.NoError(t, err) {
-		assert.Equal(t, http.StatusBadRequest, rec.Code)
-		var response map[string]string
-		json.Unmarshal(rec.Body.Bytes(), &response)
-		assert.Equal(t, utils.ErrProductPriceInvalid.Error(), response["message"])
+			if tt.expectedMsg != "" {
+				var response map[string]string
+				json.Unmarshal(rec.Body.Bytes(), &response)
+				assert.Equal(t, tt.expectedMsg, response["message"])
+			}
+		})
 	}
 }
