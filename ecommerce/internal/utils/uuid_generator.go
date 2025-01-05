@@ -1,7 +1,7 @@
 package utils
 
 import (
-    "github.com/google/uuid"
+	"github.com/google/uuid"
 )
 
 func GenerateUniqueID() string {

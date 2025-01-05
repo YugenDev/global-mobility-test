@@ -259,10 +259,10 @@ func TestCreateProductSuccess(t *testing.T) {
 	e := echo.New()
 
 	product := &models.Product{
-		Name: "Test Product",
-		Description: "Test Description", 
-		Price: 10.0,
-		Stock: 5,
+		Name:        "Test Product",
+		Description: "Test Description",
+		Price:       10.0,
+		Stock:       5,
 	}
 
 	mockService.On("GetByID", mock.Anything).Return(models.Product{}, utils.ErrNoProductsFound)
@@ -284,7 +284,7 @@ func TestCreateProductIDExists(t *testing.T) {
 	e := echo.New()
 
 	product := &models.Product{
-		ProductID:   "1", 
+		ProductID:   "1",
 		Name:        "Test Product",
 		Description: "Test Description",
 		Price:       10.0,
@@ -293,7 +293,7 @@ func TestCreateProductIDExists(t *testing.T) {
 
 	existingProduct := models.Product{
 		ProductID: "1",
-		Name:     "Existing Product",
+		Name:      "Existing Product",
 	}
 
 	mockService.On("GetByID", "1").Return(existingProduct, nil)
@@ -321,7 +321,7 @@ func TestGetProductByIDNotFound(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
-	c.SetPath("/products/:id") 
+	c.SetPath("/products/:id")
 	c.SetParamNames("id")
 	c.SetParamValues("999")
 
@@ -338,7 +338,7 @@ func TestUpdateProductInvalidID(t *testing.T) {
 	e := echo.New()
 
 	product := &models.Product{
-		Name: "Test Product",
+		Name:  "Test Product",
 		Price: 10.0,
 		Stock: 5,
 	}
@@ -349,7 +349,7 @@ func TestUpdateProductInvalidID(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/products/:id")
-	c.SetParamNames("id") 
+	c.SetParamNames("id")
 	c.SetParamValues("")
 
 	if err := handler.UpdateProduct(c); assert.NoError(t, err) {
@@ -532,10 +532,10 @@ func TestCreateProductInvalidPrice(t *testing.T) {
 	e := echo.New()
 
 	product := &models.Product{
-		Name: "Test Product",
+		Name:        "Test Product",
 		Description: "Test Description",
-		Price: 0,
-		Stock: 5,
+		Price:       0,
+		Stock:       5,
 	}
 
 	productJSON, _ := json.Marshal(product)
@@ -557,10 +557,10 @@ func TestCreateProductInvalidStock(t *testing.T) {
 	e := echo.New()
 
 	product := &models.Product{
-		Name: "Test Product",
-		Description: "Test Description", 
-		Price: 10.0,
-		Stock: -1,
+		Name:        "Test Product",
+		Description: "Test Description",
+		Price:       10.0,
+		Stock:       -1,
 	}
 
 	productJSON, _ := json.Marshal(product)
