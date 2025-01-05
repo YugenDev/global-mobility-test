@@ -20,7 +20,7 @@
 ### Usage Guide
 - This backend is meant to be used through its API-Gateway (Traefik). You can view Traefik's dashboard at `http://localhost:8081/dashboard`.
 
-- For detailed API documentation, Postman collections, and more usage details, refer to the [documentation module](docs/index.md).
+- For detailed API documentation, Postman collections, and more usage details, refer to the [documentation module](docs/Docs.md).
 
 ### Additional Notes
 - Ensure to check the `.env` file for any environment variables that need to be configured before running the application.
