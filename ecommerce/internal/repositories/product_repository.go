@@ -2,12 +2,12 @@ package repositories
 
 import (
 	"context"
-	"errors"
 	"log"
 	"time"
 
 	"github.com/YugenDev/global-mobility-test/internal/config"
 	"github.com/YugenDev/global-mobility-test/internal/models"
+	"github.com/YugenDev/global-mobility-test/internal/utils"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -44,10 +44,10 @@ func NewProductRepository() *ProductRepository {
 
 func (r *ProductRepository) CreateProduct(c echo.Context, product *models.Product) (*mongo.InsertOneResult, error) {
 	if r.Collection == nil {
-		return nil, errors.New("database collection is not initialized")
+		return nil, utils.ErrDatabaseNotInitialized
 	}
 	if product == nil {
-		return nil, errors.New("product cannot be nil")
+		return nil, utils.ErrNullProductData
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -96,7 +96,7 @@ func (r *ProductRepository) GetAllProducts() ([]models.Product, error) {
 
 func (r *ProductRepository) GetProductByID(id string) (models.Product, error) {
 	if id == "" {
-		return models.Product{}, errors.New("id cannot be empty")
+		return models.Product{}, utils.ErrProductIDRequired
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -114,10 +114,10 @@ func (r *ProductRepository) GetProductByID(id string) (models.Product, error) {
 
 func (r *ProductRepository) UpdateProduct(c echo.Context, id string, product *models.Product) (*mongo.UpdateResult, error) {
 	if id == "" {
-		return nil, errors.New("id cannot be empty")
+		return nil, utils.ErrProductIDRequired
 	}
 	if product == nil {
-		return nil, errors.New("product cannot be nil")
+		return nil, utils.ErrNullProductData
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -136,7 +136,7 @@ func (r *ProductRepository) UpdateProduct(c echo.Context, id string, product *mo
 
 func (r *ProductRepository) DeleteProduct(c echo.Context, id string) (*mongo.DeleteResult, error) {
 	if id == "" {
-		return nil, errors.New("id cannot be empty")
+		return nil, utils.ErrProductIDRequired
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
