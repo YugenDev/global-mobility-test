@@ -111,6 +111,10 @@ func (h *ProductHandler) DeleteProduct(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": utils.ErrProductIDRequired.Error()})
 	}
 
+	if _, err := h.Service.GetByID(id); err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"message": utils.ErrNoProductsFound.Error()})
+	}
+
 	err := h.Service.DeleteProduct(c, id)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"message": utils.ErrInternalServer.Error()})
