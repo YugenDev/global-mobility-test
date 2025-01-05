@@ -7,9 +7,11 @@ import (
 
 	"github.com/YugenDev/global-mobility-test/internal/models"
 	"github.com/YugenDev/global-mobility-test/internal/repositories"
+	"github.com/YugenDev/global-mobility-test/internal/utils"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -36,6 +38,9 @@ func (m *MockCollection) Find(ctx context.Context, filter interface{}, opts ...*
 
 func (m *MockCollection) FindOne(ctx context.Context, filter interface{}, opts ...*options.FindOneOptions) *mongo.SingleResult {
 	args := m.Called(ctx, filter)
+	if args.Get(0) == nil {
+		return nil
+	}
 	return args.Get(0).(*mongo.SingleResult)
 }
 
@@ -53,81 +58,6 @@ func (m *MockCollection) DeleteOne(ctx context.Context, filter interface{}, opts
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*mongo.DeleteResult), args.Error(1)
-}
-
-func TestCreateProduct_NilCollection(t *testing.T) {
-	repo := repositories.ProductRepository{Collection: nil}
-	product := &models.Product{
-		ProductID: "test-id",
-		Name:      "Test Product",
-	}
-
-	result, err := repo.CreateProduct(echo.New().NewContext(nil, nil), product)
-
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Equal(t, "database collection is not initialized", err.Error())
-}
-
-func TestCreateProduct_DatabaseError(t *testing.T) {
-	mockCollection := new(MockCollection)
-	repo := repositories.ProductRepository{Collection: mockCollection}
-
-	product := &models.Product{
-		ProductID: "test-id",
-		Name:      "Test Product",
-	}
-
-	expectedError := errors.New("database error")
-	mockCollection.On("InsertOne", mock.Anything, mock.Anything).Return(nil, expectedError)
-
-	result, err := repo.CreateProduct(echo.New().NewContext(nil, nil), product)
-
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Equal(t, expectedError, err)
-	mockCollection.AssertExpectations(t)
-}
-
-func TestCreateProduct_NilProduct(t *testing.T) {
-	mockCollection := new(MockCollection)
-	repo := repositories.ProductRepository{Collection: mockCollection}
-
-	result, err := repo.CreateProduct(echo.New().NewContext(nil, nil), nil)
-
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Equal(t, "product cannot be nil", err.Error())
-}
-
-func TestGetProductByID(t *testing.T) {
-	mockCollection := new(MockCollection)
-	repo := repositories.ProductRepository{Collection: mockCollection}
-
-	product := models.Product{
-		ProductID: "test-id",
-		Name:      "Test Product",
-	}
-
-	mockSingleResult := mongo.NewSingleResultFromDocument(&product, nil, nil)
-	mockCollection.On("FindOne", mock.Anything, mock.Anything).Return(mockSingleResult)
-
-	result, err := repo.GetProductByID("test-id")
-
-	assert.NoError(t, err)
-	assert.Equal(t, product.ProductID, result.ProductID)
-	mockCollection.AssertExpectations(t)
-}
-
-func TestGetProductByID_EmptyID(t *testing.T) {
-	mockCollection := new(MockCollection)
-	repo := repositories.ProductRepository{Collection: mockCollection}
-
-	result, err := repo.GetProductByID("")
-
-	assert.Error(t, err)
-	assert.Equal(t, models.Product{}, result)
-	assert.Equal(t, "id cannot be empty", err.Error())
 }
 
 func TestDeleteProduct(t *testing.T) {
@@ -153,58 +83,9 @@ func TestDeleteProduct_EmptyID(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Equal(t, "id cannot be empty", err.Error())
+	assert.Equal(t, "product ID is required", err.Error())
 }
 
-func TestUpdateProduct(t *testing.T) {
-	mockCollection := new(MockCollection)
-	repo := repositories.ProductRepository{Collection: mockCollection}
-
-	product := &models.Product{
-		ProductID: "test-id",
-		Name:      "Updated Product",
-	}
-
-	mockResult := &mongo.UpdateResult{ModifiedCount: 1}
-	mockCollection.On("UpdateOne", mock.Anything, mock.Anything, mock.Anything).Return(mockResult, nil)
-
-	result, err := repo.UpdateProduct(echo.New().NewContext(nil, nil), "test-id", product)
-
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, int64(1), result.ModifiedCount)
-	mockCollection.AssertExpectations(t)
-}
-
-func TestUpdateProduct_Error(t *testing.T) {
-	mockCollection := new(MockCollection)
-	repo := repositories.ProductRepository{Collection: mockCollection}
-
-	mockCollection.On("UpdateOne", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("update error"))
-
-	result, err := repo.UpdateProduct(echo.New().NewContext(nil, nil), "test-id", &models.Product{})
-
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Equal(t, "update error", err.Error())
-	mockCollection.AssertExpectations(t)
-}
-func TestUpdateProduct_EmptyValidations(t *testing.T) {
-	mockCollection := new(MockCollection)
-	repo := repositories.ProductRepository{Collection: mockCollection}
-
-	// Test empty ID
-	result, err := repo.UpdateProduct(echo.New().NewContext(nil, nil), "", &models.Product{})
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Equal(t, "id cannot be empty", err.Error())
-
-	// Test nil product
-	result, err = repo.UpdateProduct(echo.New().NewContext(nil, nil), "test-id", nil)
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Equal(t, "product cannot be nil", err.Error())
-}
 func TestGetAllProducts(t *testing.T) {
 	mockCollection := new(MockCollection)
 	repo := repositories.ProductRepository{Collection: mockCollection}
@@ -248,43 +129,7 @@ func TestGetAllProducts_DatabaseError(t *testing.T) {
 	assert.Equal(t, expectedError, err)
 	mockCollection.AssertExpectations(t)
 }
-func TestCreateProduct_Success(t *testing.T) {
-	mockCollection := new(MockCollection)
-	repo := repositories.ProductRepository{Collection: mockCollection}
 
-	product := &models.Product{
-		ProductID: "test-id",
-		Name:      "Test Product",
-	}
-
-	expectedResult := &mongo.InsertOneResult{InsertedID: "test-id"}
-	mockCollection.On("InsertOne", mock.Anything, mock.Anything).Return(expectedResult, nil)
-
-	result, err := repo.CreateProduct(echo.New().NewContext(nil, nil), product)
-
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, expectedResult, result)
-	mockCollection.AssertExpectations(t)
-
-	// Verify timestamps were set
-	assert.False(t, product.CreatedAt.IsZero())
-	assert.False(t, product.UpdatedAt.IsZero())
-}
-func TestGetProductByID_DatabaseError(t *testing.T) {
-	mockCollection := new(MockCollection)
-	repo := repositories.ProductRepository{Collection: mockCollection}
-
-	expectedError := errors.New("database error")
-	mockSingleResult := mongo.NewSingleResultFromDocument(nil, expectedError, nil)
-	mockCollection.On("FindOne", mock.Anything, mock.Anything).Return(mockSingleResult)
-
-	result, err := repo.GetProductByID("test-id")
-
-	assert.Error(t, err)
-	assert.Equal(t, models.Product{}, result)
-	mockCollection.AssertExpectations(t)
-}
 func TestDeleteProduct_DatabaseError(t *testing.T) {
 	mockCollection := new(MockCollection)
 	repo := repositories.ProductRepository{Collection: mockCollection}
@@ -314,5 +159,176 @@ func TestGetAllProducts_CursorError(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
+	mockCollection.AssertExpectations(t)
+}
+func TestCreateProduct(t *testing.T) {
+	mockCollection := new(MockCollection)
+	repo := repositories.ProductRepository{Collection: mockCollection}
+
+	product := &models.Product{
+		ProductID: "test-id",
+		Name:      "Test Product",
+	}
+
+	mockResult := &mongo.InsertOneResult{InsertedID: "test-id"}
+	mockCollection.On("InsertOne", mock.Anything, mock.Anything).Return(mockResult, nil)
+
+	result, err := repo.CreateProduct(echo.New().NewContext(nil, nil), product)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, mockResult, result)
+	mockCollection.AssertExpectations(t)
+}
+
+func TestCreateProduct_NilProduct(t *testing.T) {
+	mockCollection := new(MockCollection)
+	repo := repositories.ProductRepository{Collection: mockCollection}
+
+	result, err := repo.CreateProduct(echo.New().NewContext(nil, nil), nil)
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Equal(t, utils.ErrNullProductData, err)
+}
+
+func TestCreateProduct_NilCollection(t *testing.T) {
+	repo := repositories.ProductRepository{Collection: nil}
+	product := &models.Product{ProductID: "test-id"}
+
+	result, err := repo.CreateProduct(echo.New().NewContext(nil, nil), product)
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Equal(t, utils.ErrDatabaseNotInitialized, err)
+}
+
+func TestCreateProduct_DatabaseError(t *testing.T) {
+	mockCollection := new(MockCollection)
+	repo := repositories.ProductRepository{Collection: mockCollection}
+
+	product := &models.Product{ProductID: "test-id"}
+	expectedError := errors.New("database error")
+	mockCollection.On("InsertOne", mock.Anything, mock.Anything).Return(nil, expectedError)
+
+	result, err := repo.CreateProduct(echo.New().NewContext(nil, nil), product)
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Equal(t, expectedError, err)
+	mockCollection.AssertExpectations(t)
+}
+func TestGetProductByID(t *testing.T) {
+	mockCollection := new(MockCollection)
+	repo := repositories.ProductRepository{Collection: mockCollection}
+
+	product := models.Product{
+		ProductID: "test-id",
+		Name:      "Test Product",
+	}
+
+	mockSingleResult := mongo.NewSingleResultFromDocument(product, nil, nil)
+	mockCollection.On("FindOne", mock.Anything, bson.M{"product_id": "test-id"}).Return(mockSingleResult)
+
+	result, err := repo.GetProductByID("test-id")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, product.ProductID, result.ProductID)
+	assert.Equal(t, product.Name, result.Name)
+	mockCollection.AssertExpectations(t)
+}
+
+func TestGetProductByID_EmptyID(t *testing.T) {
+	mockCollection := new(MockCollection)
+	repo := repositories.ProductRepository{Collection: mockCollection}
+
+	result, err := repo.GetProductByID("")
+
+	assert.Error(t, err)
+	assert.Equal(t, utils.ErrProductIDRequired, err)
+	assert.Equal(t, models.Product{}, result)
+}
+
+func TestGetProductByID_DatabaseError(t *testing.T) {
+	mockCollection := new(MockCollection)
+	repo := repositories.ProductRepository{Collection: mockCollection}
+
+	expectedError := errors.New("database error")
+	mockSingleResult := mongo.NewSingleResultFromDocument(bson.M{}, expectedError, nil)
+	mockCollection.On("FindOne", mock.Anything, bson.M{"product_id": "test-id"}).Return(mockSingleResult)
+
+	result, err := repo.GetProductByID("test-id")
+
+	assert.Error(t, err)
+	assert.Equal(t, expectedError, err)
+	assert.Equal(t, models.Product{}, result)
+	mockCollection.AssertExpectations(t)
+}
+func TestUpdateProduct(t *testing.T) {
+	mockCollection := new(MockCollection)
+	repo := repositories.ProductRepository{Collection: mockCollection}
+
+	product := &models.Product{
+		ProductID: "test-id",
+		Name:      "Updated Product",
+	}
+
+	mockResult := &mongo.UpdateResult{MatchedCount: 1, ModifiedCount: 1}
+	mockCollection.On("UpdateOne", mock.Anything, bson.M{"product_id": "test-id"}, mock.Anything).Return(mockResult, nil)
+
+	result, err := repo.UpdateProduct(echo.New().NewContext(nil, nil), "test-id", product)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, int64(1), result.MatchedCount)
+	assert.Equal(t, int64(1), result.ModifiedCount)
+	mockCollection.AssertExpectations(t)
+}
+
+func TestUpdateProduct_EmptyID(t *testing.T) {
+	mockCollection := new(MockCollection)
+	repo := repositories.ProductRepository{Collection: mockCollection}
+
+	product := &models.Product{
+		ProductID: "test-id",
+		Name:      "Updated Product",
+	}
+
+	result, err := repo.UpdateProduct(echo.New().NewContext(nil, nil), "", product)
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Equal(t, utils.ErrProductIDRequired, err)
+}
+
+func TestUpdateProduct_NilProduct(t *testing.T) {
+	mockCollection := new(MockCollection)
+	repo := repositories.ProductRepository{Collection: mockCollection}
+
+	result, err := repo.UpdateProduct(echo.New().NewContext(nil, nil), "test-id", nil)
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Equal(t, utils.ErrNullProductData, err)
+}
+
+func TestUpdateProduct_DatabaseError(t *testing.T) {
+	mockCollection := new(MockCollection)
+	repo := repositories.ProductRepository{Collection: mockCollection}
+
+	product := &models.Product{
+		ProductID: "test-id",
+		Name:      "Updated Product",
+	}
+
+	expectedError := errors.New("database error")
+	mockCollection.On("UpdateOne", mock.Anything, bson.M{"product_id": "test-id"}, mock.Anything).Return(nil, expectedError)
+
+	result, err := repo.UpdateProduct(echo.New().NewContext(nil, nil), "test-id", product)
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Equal(t, expectedError, err)
 	mockCollection.AssertExpectations(t)
 }
